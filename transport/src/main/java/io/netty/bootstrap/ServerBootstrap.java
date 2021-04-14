@@ -130,6 +130,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     @Override
     void init(Channel channel) {
         setChannelOptions(channel, newOptionsArray(), logger);
+        //设置NioServerSocketChannel的TCP属性
         setAttributes(channel, attrs0().entrySet().toArray(EMPTY_ATTRIBUTE_ARRAY));
 
         ChannelPipeline p = channel.pipeline();
@@ -137,7 +138,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         final EventLoopGroup currentChildGroup = childGroup;
         final ChannelHandler currentChildHandler = childHandler;
         final Entry<ChannelOption<?>, Object>[] currentChildOptions;
-        synchronized (childOptions) {
+        synchronized (childOptions) {//由于childOptions属于LinkedHashMap是非线程安全的，所以使用了同步进行处理
             currentChildOptions = childOptions.entrySet().toArray(EMPTY_OPTION_ARRAY);
         }
         final Entry<AttributeKey<?>, Object>[] currentChildAttrs = childAttrs.entrySet().toArray(EMPTY_ATTRIBUTE_ARRAY);
