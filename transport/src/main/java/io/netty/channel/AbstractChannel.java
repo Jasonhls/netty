@@ -70,8 +70,11 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
      */
     protected AbstractChannel(Channel parent) {
         this.parent = parent;
+        //创建一个唯一的ChannelId。
         id = newId();
+        //创建了一个NioMessageUnsafe，用于操作消息。
         unsafe = newUnsafe();
+        //创建了一个DefaultChannelPipeline管道，是个双向链表结构，用于过滤所有的进出的消息。
         pipeline = newChannelPipeline();
     }
 
@@ -245,6 +248,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
     @Override
     public ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise) {
+        //这里的pipeline是DefaultChannelPipeline
         return pipeline.bind(localAddress, promise);
     }
 
@@ -468,9 +472,16 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 register0(promise);
             } else {
                 try {
+                    /**
+                     * 这里调用了NioEventLoop（父类为SingleThreadEventExecutor）的execute方法
+                     * 这个execute方法会把任务添加到NioEventLoop的taskQueue中。
+                     */
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {
+                            /**
+                             * 核心逻辑
+                             */
                             register0(promise);
                         }
                     });
@@ -513,6 +524,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         // again so that we process inbound data.
                         //
                         // See https://github.com/netty/netty/issues/4805
+                        /**
+                         *核心逻辑
+                         */
                         beginRead();
                     }
                 }
@@ -547,6 +561,10 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
             boolean wasActive = isActive();
             try {
+                /**
+                 * 这里会执行通道的fireChannelActive方法，告诉所有的handler，已经成功绑定。
+                 * 这里的this为NioServerSocketChannel，因此会执行NioServerSocketChannel的doBind方法。
+                 */
                 doBind(localAddress);
             } catch (Throwable t) {
                 safeSetFailure(promise, t);
@@ -563,6 +581,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 });
             }
 
+            //告诉promise任务成功了，执行监听器方法
             safeSetSuccess(promise);
         }
 
@@ -841,6 +860,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
 
             try {
+                /**
+                 * 核心逻辑
+                 */
                 doBeginRead();
             } catch (final Exception e) {
                 invokeLater(new Runnable() {

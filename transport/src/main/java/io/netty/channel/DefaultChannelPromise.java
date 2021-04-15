@@ -116,6 +116,8 @@ public class DefaultChannelPromise extends DefaultPromise<Void> implements Chann
 
     @Override
     public ChannelPromise sync() throws InterruptedException {
+        //在netty客户端启动的时候，最后ServerBootstrap.bind(PORT).sync()，这行代码中ServerBootstrap.bind(PORT)返回的是DefaultChannelPromise对象
+        //然后就调用下面这个方法，这个方法会让当前线程wait，处于阻塞状态
         super.sync();
         return this;
     }

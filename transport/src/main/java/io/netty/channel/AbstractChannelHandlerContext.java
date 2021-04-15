@@ -354,6 +354,10 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
 
     @Override
     public ChannelHandlerContext fireChannelRead(final Object msg) {
+        /**
+         * findContextInbound方法中会判断this.next（即pipeline中双向链表的下一个节点）是不是应该跳过，如果应该跳过，接着获取下下个节点，如果不跳过就返回
+         * 获取到了下一个节点的ChannelHandlerContext，接着执行invokeChannelRead方法。
+         */
         invokeChannelRead(findContextInbound(MASK_CHANNEL_READ), msg);
         return this;
     }
@@ -362,6 +366,10 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         final Object m = next.pipeline.touch(ObjectUtil.checkNotNull(msg, "msg"), next);
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
+            /**
+             * 目前包含了pipeline这个管道中包含了四个元素，HeadContext --next--> DefaultChannelHandlerContext --next--> DefaultChannelHandlerContext --next--> TailContext
+             * 这里会依次执行pipeline中每个元素，从head开始，然后执行head的next，依次往下执行
+             */
             next.invokeChannelRead(m);
         } else {
             executor.execute(new Runnable() {
@@ -376,6 +384,14 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private void invokeChannelRead(Object msg) {
         if (invokeHandler()) {
             try {
+                /**
+                 * 目前包含了pipeline这个管道中包含了四个元素，HeadContext --next--> DefaultChannelHandlerContext --next--> DefaultChannelHandlerContext --next--> TailContext
+                 * 这里会依次执行pipeline中每个元素，从head开始，然后执行head的next，依次往下执行，直到第三个元素DefaultChannelHandlerContext，它对应handler为ServerBootstrapAcceptor
+                 *
+                 * 这里是读取事件，肯定是入站，所以能够转换为ChannelInboundHandler
+                 * 如果this为HeadContext，this.handler()方法返回this，即返回HeadContext
+                 * 如果this为TailContext，this.handler()方法返回this，即返回TailContext
+                 */
                 ((ChannelInboundHandler) handler()).channelRead(this, msg);
             } catch (Throwable t) {
                 invokeExceptionCaught(t);
@@ -488,6 +504,11 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         final AbstractChannelHandlerContext next = findContextOutbound(MASK_BIND);
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
+            //this是DefaultChannelPipeline的内部类TailContext，它的一个节点是DefaultChannelHandlerContext对象，
+            // 至于为什么，因为ServerBootstrap的bind方法中实例化NioServerSocketChannel对象的时候创建的管道为DefaultChannelPipeline，而
+            //DefaultChannelPipeline的addLast(String name, ChannelHandler handler)方法添加handler的时候，会创建一个DefaultChannelHandlerContext对象，并放到
+            //双向链表的tail与tail.prev之间，因此tail.next就是DefaultChannelHandlerContext对象
+            //DefaultChannelHandlerContext的next是DefaultChannelPipeline的内部类HeadContext
             next.invokeBind(localAddress, promise);
         } else {
             safeExecute(executor, new Runnable() {
@@ -503,6 +524,8 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private void invokeBind(SocketAddress localAddress, ChannelPromise promise) {
         if (invokeHandler()) {
             try {
+                //this为DefaultChannelHandlerContext时，handler()为LoggingHandler对象
+                //this为DefaultChannelPipeline的内部类HeadContext时，handler()还是为DefaultChannelPipeline的内部类HeadContext
                 ((ChannelOutboundHandler) handler()).bind(this, localAddress, promise);
             } catch (Throwable t) {
                 notifyOutboundHandlerException(t, promise);
@@ -878,6 +901,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         EventExecutor currentExecutor = executor();
         do {
             ctx = ctx.next;
+            //skipContext判断this.next是不是应该跳过，如果跳过，接着获取next，如果不跳过，就退出循环，把ctx返回
         } while (skipContext(ctx, currentExecutor, mask, MASK_ONLY_INBOUND));
         return ctx;
     }

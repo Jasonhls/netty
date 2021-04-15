@@ -459,6 +459,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      */
     protected boolean runAllTasks(long timeoutNanos) {
         fetchFromScheduledTaskQueue();
+        //这里会获取NioEventLoop的taskQueue里面的任务
         Runnable task = pollTask();
         if (task == null) {
             afterRunningAllTasks();
@@ -815,6 +816,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     @Override
     public void execute(Runnable task) {
         ObjectUtil.checkNotNull(task, "task");
+        /**
+         * 这里会启动新线程
+         */
         execute(task, !(task instanceof LazyRunnable) && wakesUpForTask(task));
     }
 
@@ -824,13 +828,20 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     private void execute(Runnable task, boolean immediate) {
+        //判断该EventLoop的线程是否是当前线程
         boolean inEventLoop = inEventLoop();
+        //把任务添加到NioEventLoop的taskQueue队列中
         addTask(task);
         if (!inEventLoop) {
+            /**
+             * 如果不是，尝试启动线程（但由于线程是单个的，因此只能启动一次）
+             */
             startThread();
+            //如果线程已经停止
             if (isShutdown()) {
                 boolean reject = false;
                 try {
+                    //并且如果删除任务失败
                     if (removeTask(task)) {
                         reject = true;
                     }
@@ -840,12 +851,15 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                     // In worst case we will log on termination.
                 }
                 if (reject) {
+                    //执行拒绝策略，默认是抛出异常
                     reject();
                 }
             }
         }
 
+        //如果addTaskWakesup为false，并且任务不是NonWakeupRunnable类型的
         if (!addTaskWakesUp && immediate) {
+            //尝试唤醒selector，这个时候阻塞在selector的线程就会立即返回
             wakeup(inEventLoop);
         }
     }
@@ -944,6 +958,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             if (STATE_UPDATER.compareAndSet(this, ST_NOT_STARTED, ST_STARTED)) {
                 boolean success = false;
                 try {
+                    //启动一个线程
                     doStartThread();
                     success = true;
                 } finally {
@@ -975,6 +990,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private void doStartThread() {
         assert thread == null;
+        /**
+         * 往新的线程里添加任务，当主线程wait之后，就会执行这个线程的任务了。
+         * 下面这个线程可以拿到this的信息，也就是可以拿到BossGroup的属性child中的NioEventLoop的信息
+         */
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -986,6 +1005,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
+                    /**
+                     * 执行NioEventLoop的run方法
+                     */
                     SingleThreadEventExecutor.this.run();
                     success = true;
                 } catch (Throwable t) {

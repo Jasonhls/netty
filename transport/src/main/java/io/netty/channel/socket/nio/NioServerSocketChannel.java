@@ -58,6 +58,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
              *  {@link SelectorProvider#provider()} which is called by each ServerSocketChannel.open() otherwise.
              *
              *  See <a href="https://github.com/netty/netty/issues/2308">#2308</a>.
+             *  这里的provider是WindowsSelectorProvider
              */
             return provider.openServerSocketChannel();
         } catch (IOException e) {
@@ -70,8 +71,10 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     /**
      * Create a new instance
+     * 在利用反射调用构造方法创建实例，会调用到下面的方法
      */
     public NioServerSocketChannel() {
+        //这里的DEFAULT_SELECTOR_PROVIDER返回的是WindowsSelectorProvider
         this(newSocket(DEFAULT_SELECTOR_PROVIDER));
     }
 
@@ -86,7 +89,9 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
      * Create a new instance using the given {@link ServerSocketChannel}.
      */
     public NioServerSocketChannel(ServerSocketChannel channel) {
+        //super方法里面会创建ChannelId，NioMessageUnsafe和DefaultChannelPipeline管道。
         super(null, channel, SelectionKey.OP_ACCEPT);
+        //创建一个NioServerSocketChannelConfig对象，用于对外展示一些配置。
         config = new NioServerSocketChannelConfig(this, javaChannel().socket());
     }
 
@@ -144,10 +149,12 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
 
     @Override
     protected int doReadMessages(List<Object> buf) throws Exception {
+        //获取是一个JDK的SocketChannel
         SocketChannel ch = SocketUtils.accept(javaChannel());
 
         try {
             if (ch != null) {
+                //把获取到的SocketChannel被封装成NioSocketChannel，并添加到容器中
                 buf.add(new NioSocketChannel(this, ch));
                 return 1;
             }

@@ -39,6 +39,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
      * @see AbstractNioChannel#AbstractNioChannel(Channel, SelectableChannel, int)
      */
     protected AbstractNioMessageChannel(Channel parent, SelectableChannel ch, int readInterestOp) {
+        //super方法里面会创建ChannelId，NioMessageUnsafe和DefaultChannelPipeline管道。
         super(parent, ch, readInterestOp);
     }
 
@@ -61,7 +62,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
 
         @Override
         public void read() {
-            assert eventLoop().inEventLoop();
+            assert eventLoop().inEventLoop();//检查this.eventLoop是否是当前线程
             final ChannelConfig config = config();
             final ChannelPipeline pipeline = pipeline();
             final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
@@ -72,6 +73,10 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
             try {
                 try {
                     do {
+                        /**
+                         * 当前的this为NioServerSocketChannel
+                         * 读取boss线程中NioServerSocketChannel接受到的请求。并把这些请求放进容器中
+                         */
                         int localRead = doReadMessages(readBuf);
                         if (localRead == 0) {
                             break;
@@ -90,6 +95,14 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                 int size = readBuf.size();
                 for (int i = 0; i < size; i ++) {
                     readPending = false;
+                    /**
+                     * readBuf.get(i)获取的是上面doReadMessages方法中添加到readBuf中的NioSocketChannel
+                     * pipeline的head为HeadContext（DefaultChannelPipeline内部类），HeadContext的next为DefaultChannelHandlerContext（对应的handler为LoggingHandler），
+                     * DefaultChannelHandlerContext的next为DefaultChannelHandlerContext（对应的handler为ServerBootstrapAcceptor（ServerBootstrap内部类）），
+                     * 而它的next为TailContext（DefaultChannelPipeline内部类）
+                     *
+                     * 有读取事件的时候会触发pipeline的fireChannelRead方法，该方法会调用pipeline的handler链
+                     */
                     pipeline.fireChannelRead(readBuf.get(i));
                 }
                 readBuf.clear();

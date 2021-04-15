@@ -199,10 +199,14 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
         synchronized (this) {
+            //检查这个handler实例是否是共享的，如果不是，并且已经被别的pipeline使用了，就抛出异常
             checkMultiplicity(handler);
 
+            //添加handler的时候创建ChannelHandlerContext对象，
+            // ChannelHandlerContext的主要功能是管理他所关联的Handler和同一个Pipeline中的其他Handler之间的交互。
             newCtx = newContext(group, filterName(name, handler), handler);
 
+            //把新创建的ChannelHandlerContext插入到双向链表中，插入tail和tail的prev这两个节点的元素之间
             addLast0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
@@ -220,6 +224,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return this;
             }
         }
+        //同步或异步或晚点异步的调用 callHandlerAdded0 方法
         callHandlerAdded0(newCtx);
         return this;
     }
@@ -970,6 +975,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     @Override
     public final ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise) {
+        //这里的tail是DefaultChannelPipeline的内部类TailContext，它的下一个节点是DefaultChannelHandlerContext
         return tail.bind(localAddress, promise);
     }
 
@@ -1331,6 +1337,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         @Override
         public void bind(
                 ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) {
+            /**
+             * unsafe是实例化NioServerSocketChannel的时候创建的NioMessageUnsafe对象
+             * 这里会执行通道中的fireChannelActive方法，告诉所有的handler，已经成功绑定
+             */
             unsafe.bind(localAddress, promise);
         }
 

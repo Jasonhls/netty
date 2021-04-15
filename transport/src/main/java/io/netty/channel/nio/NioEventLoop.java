@@ -434,6 +434,12 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     @Override
     protected void run() {
         int selectCnt = 0;
+        /**
+         * 每个Boss NioEventLoop循环执行的步骤：
+         * 1、轮询accept事件。
+         * 2、处理accept事件，与client建立连接，生成NioSocketChannel，并将其注册到某个worker NIOEventLoop上的selector。
+         * 3、处理任务队列的任务，即runAllTasks。
+         */
         for (;;) {
             try {
                 int strategy;
@@ -449,11 +455,13 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     case SelectStrategy.SELECT:
                         long curDeadlineNanos = nextScheduledTaskDeadlineNanos();
                         if (curDeadlineNanos == -1L) {
-                            curDeadlineNanos = NONE; // nothing on the calendar
+                            // nothing on the calendar
+                            curDeadlineNanos = NONE;
                         }
                         nextWakeupNanos.set(curDeadlineNanos);
                         try {
                             if (!hasTasks()) {
+                                //对应第一步
                                 strategy = select(curDeadlineNanos);
                             }
                         } finally {
@@ -481,22 +489,27 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 if (ioRatio == 100) {
                     try {
                         if (strategy > 0) {
+                            //对应第二步
                             processSelectedKeys();
                         }
                     } finally {
                         // Ensure we always run tasks.
+                        //对应第三步
                         ranTasks = runAllTasks();
                     }
                 } else if (strategy > 0) {
                     final long ioStartTime = System.nanoTime();
                     try {
+                        //对应第二步
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
                         final long ioTime = System.nanoTime() - ioStartTime;
+                        //对应第三步
                         ranTasks = runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
                     }
                 } else {
+                    //对应第三步
                     ranTasks = runAllTasks(0); // This will run the minimum number of tasks
                 }
 
@@ -711,6 +724,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             // Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead
             // to a spin loop
             if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 || readyOps == 0) {
+                /**
+                 * 这里的unsafe是NioMessageUnsafe对象
+                 * 当有读取事件或Accept事件的时候
+                 */
                 unsafe.read();
             }
         } catch (CancelledKeyException ignored) {
