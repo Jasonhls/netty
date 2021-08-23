@@ -133,12 +133,13 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         //设置NioServerSocketChannel的TCP属性
         setAttributes(channel, attrs0().entrySet().toArray(EMPTY_ATTRIBUTE_ARRAY));
 
+        //
         ChannelPipeline p = channel.pipeline();
 
         final EventLoopGroup currentChildGroup = childGroup;
         final ChannelHandler currentChildHandler = childHandler;
         final Entry<ChannelOption<?>, Object>[] currentChildOptions;
-        //由于childOptions属于LinkedHashMap是非线程安全的，所以使用了同步进行处理
+        //由于childOptions属于LinkedHashMap是非线程安全的，所以使用了synchronized进行同步处理
         synchronized (childOptions) {
             currentChildOptions = childOptions.entrySet().toArray(EMPTY_OPTION_ARRAY);
         }

@@ -72,7 +72,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
         this.parent = parent;
         //创建一个唯一的ChannelId。
         id = newId();
-        //创建了一个NioMessageUnsafe，用于操作消息。
+        //创建了一个AbstractNioMessageChannel的内部类NioMessageUnsafe，用于操作消息。
         unsafe = newUnsafe();
         //创建了一个DefaultChannelPipeline管道，是个双向链表结构，用于过滤所有的进出的消息。
         pipeline = newChannelPipeline();
@@ -572,6 +572,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 return;
             }
 
+            /**
+             * 执行成功后，就执行通道的fireChannelActive方法，告诉所有的handler，已经成功绑定
+             */
             if (!wasActive && isActive()) {
                 invokeLater(new Runnable() {
                     @Override

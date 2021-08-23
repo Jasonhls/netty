@@ -206,7 +206,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             // ChannelHandlerContext的主要功能是管理他所关联的Handler和同一个Pipeline中的其他Handler之间的交互。
             newCtx = newContext(group, filterName(name, handler), handler);
 
-            //把新创建的ChannelHandlerContext插入到双向链表中，插入tail和tail的prev这两个节点的元素之间
+            /**
+             * 把新创建的ChannelHandlerContext插入到双向链表中，插入tail和tail的prev这两个节点的元素之间
+             */
             addLast0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
@@ -229,7 +231,21 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return this;
     }
 
+    /**
+     * 把新创建的ChannelHandlerContext插入到双向链表中，插入tail和tail的prev这两个节点的元素之间
+     * @param newCtx
+     */
     private void addLast0(AbstractChannelHandlerContext newCtx) {
+        /**
+         * tail.prev就是head，在ServerBootstrap的doBind方法中的initAndRegister方法中，创建channel的过程中，
+         * 即channel = this.channelFactory.newChannel()方法中调用到了NioServerSocketChannel的无参构造方法，即
+         * 创建的channel类型为NioServerSocketChannel，这个类的无参构造方法中会创建一个DefaultPipeline对象赋值给它的属性pipeline，
+         * 参考DefaultPipeline的构造方法（只有一个构造方法），会执行如下代码：
+         * this.tail = new DefaultChannelPipeline.TailContext(this);
+         * this.head = new DefaultChannelPipeline.HeadContext(this);
+         * this.head.next = this.tail;
+         * this.tail.prev = this.head;
+         */
         AbstractChannelHandlerContext prev = tail.prev;
         newCtx.prev = prev;
         newCtx.next = tail;

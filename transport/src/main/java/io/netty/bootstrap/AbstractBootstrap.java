@@ -106,6 +106,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      * {@link Channel} implementation has no no-args constructor.
      */
     public B channel(Class<? extends C> channelClass) {
+        //通过调用传入的channelClass的getConstructor方法的返回值赋值给ReflectiveChannelFactory的属性constructor，
+        // 如果是server端，这里传入的channelClass为NioServerSocketChannel.class
         return channelFactory(new ReflectiveChannelFactory<C>(
                 ObjectUtil.checkNotNull(channelClass, "channelClass")
         ));
@@ -270,7 +272,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
 
     private ChannelFuture doBind(final SocketAddress localAddress) {
         /**
-         * 初始化NioServerSocketChannel通道并注册各个handler，返回一个ChannelFuture
+         * 核心方法1：initAndRegister方法中，会初始化NioServerSocketChannel通道并注册各个handler，返回一个ChannelFuture
          */
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
@@ -281,7 +283,9 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
-            //核心方法
+            /**
+             * 核心方法2：
+             */
             doBind0(regFuture, channel, localAddress, promise);
             return promise;
         } else {
@@ -311,7 +315,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
-            //实例化NioServerSocketChannel
+            //实例化NioServerSocketChannel，channelFactory类型为ReflectiveChannelFactory
             channel = channelFactory.newChannel();
             //初始化NioServerSocketChannel中的一些属性
             init(channel);

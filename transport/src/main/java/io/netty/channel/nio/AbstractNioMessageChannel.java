@@ -39,7 +39,10 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
      * @see AbstractNioChannel#AbstractNioChannel(Channel, SelectableChannel, int)
      */
     protected AbstractNioMessageChannel(Channel parent, SelectableChannel ch, int readInterestOp) {
-        //super方法里面会创建ChannelId，NioMessageUnsafe和DefaultChannelPipeline管道。
+        /**
+         * super方法里面会创建ChannelId，NioMessageUnsafe和DefaultChannelPipeline管道。
+         * 入参ch为ServerSocketChannelImpl对象
+         */
         super(parent, ch, readInterestOp);
     }
 
