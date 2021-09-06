@@ -388,6 +388,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
     @Override
     public final ChannelPipeline addLast(ChannelHandler... handlers) {
+        /**
+         * 把新创建的ChannelHandlerContext插入到双向链表中，插入tail和tail的prev这两个节点的元素之间
+         */
         return addLast(null, handlers);
     }
 
@@ -399,6 +402,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             if (h == null) {
                 break;
             }
+            /**
+             * 把新创建的ChannelHandlerContext插入到双向链表中，插入tail和tail的prev这两个节点的元素之间
+             */
             addLast(executor, null, h);
         }
 

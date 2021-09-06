@@ -100,16 +100,20 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                     readPending = false;
                     /**
                      * readBuf.get(i)获取的是上面doReadMessages方法中添加到readBuf中的NioSocketChannel
+                     *
                      * pipeline的head为HeadContext（DefaultChannelPipeline内部类），HeadContext的next为DefaultChannelHandlerContext（对应的handler为LoggingHandler），
                      * DefaultChannelHandlerContext的next为DefaultChannelHandlerContext（对应的handler为ServerBootstrapAcceptor（ServerBootstrap内部类）），
                      * 而它的next为TailContext（DefaultChannelPipeline内部类）
                      *
-                     * 有读取事件的时候会触发pipeline的fireChannelRead方法，该方法会调用pipeline的handler链
+                     * 有读取事件的时候会触发pipeline的fireChannelRead方法，该方法会调用pipeline的handler链，循环执行该链上每个对象的channelRead方法
                      */
                     pipeline.fireChannelRead(readBuf.get(i));
                 }
                 readBuf.clear();
                 allocHandle.readComplete();
+                /**
+                 * 遍历执行管道中handler链的每个对象的channelReadComplete方法
+                 */
                 pipeline.fireChannelReadComplete();
 
                 if (exception != null) {

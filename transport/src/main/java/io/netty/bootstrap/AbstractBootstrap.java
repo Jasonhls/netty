@@ -317,7 +317,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         try {
             //实例化NioServerSocketChannel，channelFactory类型为ReflectiveChannelFactory
             channel = channelFactory.newChannel();
-            //初始化NioServerSocketChannel中的一些属性
+            //初始化NioServerSocketChannel中的一些属性，会把ServerBootstrapAcceptor对象加入到管道的head和tail之间
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {

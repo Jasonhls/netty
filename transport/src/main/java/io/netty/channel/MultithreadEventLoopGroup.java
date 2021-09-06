@@ -75,6 +75,10 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
 
     @Override
     public EventLoop next() {
+        /**
+         * 当前this为NioEventLoopGroup，父类为MultithreadEventLoopGroup（它的父类为MultithreadEventExecutorGroup）
+         * 会根据父类的选择器EventExecutorChooser从线程池中选择一个EventExecutor并返回
+         */
         return (EventLoop) super.next();
     }
 
@@ -84,7 +88,8 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
     @Override
     public ChannelFuture register(Channel channel) {
         /**
-         * next()会返回workerGroup的属性child（是一个EventExecutor数组）中的某一个EventExecutor
+         * next()会返回workerGroup的属性child（是一个EventExecutor数组）中的某一个EventExecutor（根据选择器去选择）
+         * next()值为NioEventLoop，其父类为SingleThreadEventLoop
          */
         return next().register(channel);
     }

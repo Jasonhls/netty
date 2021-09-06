@@ -78,12 +78,17 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
 
     @Override
     public ChannelFuture register(Channel channel) {
+        //this为NioEventLoop，父类为SingleThreadEventLoop
         return register(new DefaultChannelPromise(channel, this));
     }
 
     @Override
     public ChannelFuture register(final ChannelPromise promise) {
         ObjectUtil.checkNotNull(promise, "promise");
+        /**
+         * 这里的promise.channel()就是前面的NioSocketChannel，promise.channel().unsafe()值为NioSocketChannelUnsafe对象，它的一个父类为AbstractUnsafe
+         * register方法里面会执行AbstractNioChannel的doBeginRead方法
+         */
         promise.channel().unsafe().register(this, promise);
         return promise;
     }

@@ -70,6 +70,9 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 
         @Override
         public EventExecutor next() {
+            /**
+             * 采用了轮询的方式，返回executors数组的一个元素
+             */
             return executors[(int) Math.abs(idx.getAndIncrement() % executors.length)];
         }
     }

@@ -155,6 +155,9 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                     pipeline.addLast(handler);
                 }
 
+                /**
+                 * 创建一个ServerBootstrapAcceptor对象，插入到双向链表中，插入tail和tail的prev这两个节点的元素之间
+                 */
                 ch.eventLoop().execute(new Runnable() {
                     @Override
                     public void run() {
@@ -211,8 +214,12 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         @Override
         @SuppressWarnings("unchecked")
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            //msg就是管道，比如NioSocketChannel
             final Channel child = (Channel) msg;
 
+            /**
+             * 会把childHandler（即自定义的实现接口ChannelInboundHandler（有一个默认的实现类为ChannelInboundHandlerAdapter））的子类加入到管道链中
+             */
             child.pipeline().addLast(childHandler);
 
             setChannelOptions(child, childOptions, logger);
@@ -220,7 +227,10 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
             try {
                 /**
-                 * 将客户端连接注册到workerGroup线程池中
+                 * 核心代码：
+                 * childGroup就是创建服务端的workGroup（即NioEventLoopGroup，是MultithreadEventLoopGroup的子类）
+                 * 将客户端连接注册到workerGroup线程池中：将管道注册到workGroup线程池中，会根据选择器选择workGroup中的某一个NioEventLoop来注册这个管道
+                 * register方法里面会执行AbstractNioChannel的doBeginRead方法
                  */
                 childGroup.register(child).addListener(new ChannelFutureListener() {
                     @Override

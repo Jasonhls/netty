@@ -136,6 +136,9 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
 
     @Override
     public EventExecutor next() {
+        /**
+         * 根据具体的EventExecutorChooser，从executors线程池中选择一个EventExecutor
+         */
         return chooser.next();
     }
 

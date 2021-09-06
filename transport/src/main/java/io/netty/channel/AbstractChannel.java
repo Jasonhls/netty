@@ -473,6 +473,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             } else {
                 try {
                     /**
+                     * 使用eventLoop（就是一个线程）执行任务
                      * 这里调用了NioEventLoop（父类为SingleThreadEventExecutor）的execute方法
                      * 这个execute方法会把任务添加到NioEventLoop的taskQueue中。
                      */

@@ -362,6 +362,10 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /**
+     * @param next
+     * @param msg 这里的msg为NioSocketChannel对象
+     */
     static void invokeChannelRead(final AbstractChannelHandlerContext next, Object msg) {
         final Object m = next.pipeline.touch(ObjectUtil.checkNotNull(msg, "msg"), next);
         EventExecutor executor = next.executor();
@@ -381,6 +385,9 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         }
     }
 
+    /**
+     * @param msg 这里的msg为NioSocketChannel对象
+     */
     private void invokeChannelRead(Object msg) {
         if (invokeHandler()) {
             try {
@@ -391,6 +398,9 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
                  * 这里是读取事件，肯定是入站，所以能够转换为ChannelInboundHandler
                  * 如果this为HeadContext，this.handler()方法返回this，即返回HeadContext
                  * 如果this为TailContext，this.handler()方法返回this，即返回TailContext
+                 *
+                 * 如果handler()返回的是实现了ChannelInboundHandler接口的自定义的实现类，就会执行该实现类的channelRead方法
+                 * 如果handler()返回的是ServerBootstrapAcceptor，就执行该类的channelRead方法，该方法里面会执行AbstractNioChannel的doBeginRead核心方法
                  */
                 ((ChannelInboundHandler) handler()).channelRead(this, msg);
             } catch (Throwable t) {

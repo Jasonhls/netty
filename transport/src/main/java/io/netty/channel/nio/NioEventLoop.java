@@ -586,8 +586,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     private void processSelectedKeys() {
         if (selectedKeys != null) {
+            //里面会执行processSelectedKey(SelectionKey k, AbstractNioChannel ch)方法
             processSelectedKeysOptimized();
         } else {
+            //里面会执行processSelectedKey(SelectionKey k, AbstractNioChannel ch)方法
             processSelectedKeysPlain(selector.selectedKeys());
         }
     }
@@ -625,6 +627,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             i.remove();
 
             if (a instanceof AbstractNioChannel) {
+                //核心方法
                 processSelectedKey(k, (AbstractNioChannel) a);
             } else {
                 @SuppressWarnings("unchecked")
@@ -660,6 +663,9 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             final Object a = k.attachment();
 
             if (a instanceof AbstractNioChannel) {
+                /**
+                 * 核心方法
+                 */
                 processSelectedKey(k, (AbstractNioChannel) a);
             } else {
                 @SuppressWarnings("unchecked")
