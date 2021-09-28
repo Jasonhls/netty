@@ -54,6 +54,9 @@ public final class ThreadExecutorMap {
         return new Executor() {
             @Override
             public void execute(final Runnable command) {
+                /**
+                 * 这里的executor为ThreadPerTaskExecutor对象
+                 */
                 executor.execute(apply(command, eventExecutor));
             }
         };
@@ -66,6 +69,9 @@ public final class ThreadExecutorMap {
     public static Runnable apply(final Runnable command, final EventExecutor eventExecutor) {
         ObjectUtil.checkNotNull(command, "command");
         ObjectUtil.checkNotNull(eventExecutor, "eventExecutor");
+        /**
+         * 对传入的Runnable任务包装一层，并返回新的Runnable
+         */
         return new Runnable() {
             @Override
             public void run() {

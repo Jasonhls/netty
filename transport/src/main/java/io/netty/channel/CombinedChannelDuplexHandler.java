@@ -248,6 +248,8 @@ public class CombinedChannelDuplexHandler<I extends ChannelInboundHandler, O ext
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         assert ctx == inboundCtx.ctx;
         if (!inboundCtx.removed) {
+            //下面方法入参inboundCtx类型为CombinedChannelDuplexHandler的内部类DelegatingChannelHandlerContext
+            //inboundHandler类型为HttpServerCodec的内部类HttpServerRequestDecoder，走其父类ByteToMessageDecoder的channelRead方法
             inboundHandler.channelRead(inboundCtx, msg);
         } else {
             inboundCtx.fireChannelRead(msg);

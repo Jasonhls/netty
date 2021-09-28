@@ -156,6 +156,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         super(parent);
         this.addTaskWakesUp = addTaskWakesUp;
         this.maxPendingTasks = Math.max(16, maxPendingTasks);
+        //executor为ThreadPerTaskExecutor对象
         this.executor = ThreadExecutorMap.apply(executor, this);
         taskQueue = newTaskQueue(this.maxPendingTasks);
         rejectedExecutionHandler = ObjectUtil.checkNotNull(rejectedHandler, "rejectedHandler");
@@ -167,6 +168,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         super(parent);
         this.addTaskWakesUp = addTaskWakesUp;
         this.maxPendingTasks = DEFAULT_MAX_PENDING_EXECUTOR_TASKS;
+        //executor为ThreadPerTaskExecutor对象
         this.executor = ThreadExecutorMap.apply(executor, this);
         this.taskQueue = ObjectUtil.checkNotNull(taskQueue, "taskQueue");
         this.rejectedExecutionHandler = ObjectUtil.checkNotNull(rejectedHandler, "rejectedHandler");
@@ -993,8 +995,15 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         /**
          * 往新的线程里添加任务，当主线程wait之后，就会执行这个线程的任务了。
          * 下面这个线程可以拿到this的信息，也就是可以拿到BossGroup的属性child中的NioEventLoop的信息
+         *
+         * 在SingleThreadEventExecutor的构造方法中，执行了executor = ThreadExecutorMap.apply(executor, this);
+         * 因此执行executor的execute方法会执行到ThreadExecutorMap.apply(executor, this)方法中返回的executor对象的execute方法
+         * 传递一个Runnable任务
          */
         executor.execute(new Runnable() {
+            /**
+             * 最终会用ThreadPerTaskExecutor去执行下面这个任务
+             */
             @Override
             public void run() {
                 thread = Thread.currentThread();

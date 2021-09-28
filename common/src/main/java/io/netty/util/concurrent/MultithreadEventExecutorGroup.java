@@ -72,6 +72,9 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             throw new IllegalArgumentException(String.format("nThreads: %d (expected: > 0)", nThreads));
         }
 
+        /**
+         * 创建一个ThreadPerTaskExecutor线程池对象
+         */
         if (executor == null) {
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
@@ -81,6 +84,10 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         for (int i = 0; i < nThreads; i ++) {
             boolean success = false;
             try {
+                /**
+                 * 如果this为NioEventLoopGroup，这里会走NioEventLoopGroup的newChild方法，
+                 * 该方法会把创建的ThreadPerTaskExecutor对象赋值给创建的NioEventLoop对象的父类SingleThreadEventExecutor的属性executor
+                 */
                 children[i] = newChild(executor, args);
                 success = true;
             } catch (Exception e) {
