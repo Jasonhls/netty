@@ -356,7 +356,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     public ChannelHandlerContext fireChannelRead(final Object msg) {
         /**
          * findContextInbound方法中会判断this.next（即pipeline中双向链表的下一个节点）是不是应该跳过，如果应该跳过，接着获取下下个节点，如果不跳过就返回
-         * 获取到了下一个节点的ChannelHandlerContext，接着执行invokeChannelRead方法。
+         * 通过findContextInbound方法，获取通道中当前节点的next节点(即后继节点)，接着执行后继节点的invokeChannelRead方法。
          */
         invokeChannelRead(findContextInbound(MASK_CHANNEL_READ), msg);
         return this;
@@ -822,6 +822,9 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
             throw e;
         }
 
+        /**
+         * 由于这里是write，即写入，因此寻找下一个ContextOutbound，即寻找通道中当前ChannelHandlerContext的prev节点(即前继节点)
+         */
         final AbstractChannelHandlerContext next = findContextOutbound(flush ?
                 (MASK_WRITE | MASK_FLUSH) : MASK_WRITE);
         final Object m = pipeline.touch(msg, next);
