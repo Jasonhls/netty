@@ -402,11 +402,12 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
                  * 如果handler()返回的是实现了ChannelInboundHandler接口的自定义的实现类，就会执行该实现类的channelRead方法
                  * 如果handler()返回的是ServerBootstrapAcceptor，就执行该类的channelRead方法，该方法里面会执行AbstractNioChannel的doBeginRead核心方法
                  *
+                 * 处理Http请求的核心逻辑：
                  * 如果是reactor-netty中的http请求处理，channel通道中各个channel分别为：
                  * DefaultChannelPipeline$HeadContext 没有handler
                  * 其next----> DefaultChannelHandlerContext，handler为HttpServerCodec
                  * 其next----> DefaultChannelHandlerContext，handler为HttpTrafficHandler(为reactor-netty包中的reactor.netty.http.server.HttpTrafficHandler类)
-                 * 其next----> DefaultChannelHandlerContext，handler为ChannelOperationsHandler
+                 * 其next----> DefaultChannelHandlerContext，handler为ChannelOperationsHandler（包含处理http请求的核心逻辑）
                  * 其next----> DefaultChannelHandlerContext$TailContext
                  * 那么handler()返回的是HttpServerCodec（其父类为CombinedChannelDuplexHandler）
                  */

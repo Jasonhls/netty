@@ -115,6 +115,10 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             }
         }
 
+        /**
+         * chooserFactory为DefaultEventExecutorChooserFactory.INSTANCE对象，newChooser方法返回一个EventExecutorChooser，
+         * 比如GenericEventExecutorChooser或PowerOfTwoEventExecutorChooser
+         */
         chooser = chooserFactory.newChooser(children);
 
         final FutureListener<Object> terminationListener = new FutureListener<Object>() {

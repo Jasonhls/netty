@@ -137,11 +137,13 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                  EventLoopTaskQueueFactory queueFactory) {
         super(parent, executor, false, newTaskQueue(queueFactory), newTaskQueue(queueFactory),
                 rejectedExecutionHandler);
+        //如果是window平台，selectorProvider为WindowsSelectorProvider
         this.provider = ObjectUtil.checkNotNull(selectorProvider, "selectorProvider");
         this.selectStrategy = ObjectUtil.checkNotNull(strategy, "selectStrategy");
+        //创建SelectorTuple对象
         final SelectorTuple selectorTuple = openSelector();
-        this.selector = selectorTuple.selector;
-        this.unwrappedSelector = selectorTuple.unwrappedSelector;
+        this.selector = selectorTuple.selector;//上一步创建的SelectorTuple对象的属性selector值为SelectedSelectionKeySetSelector对象
+        this.unwrappedSelector = selectorTuple.unwrappedSelector;//上一步创建的SelectorTuple对象的属性unwrappedSelector值为WindowsSelectorImpl对象
     }
 
     private static Queue<Runnable> newTaskQueue(
@@ -170,6 +172,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     private SelectorTuple openSelector() {
         final Selector unwrappedSelector;
         try {
+            //如果是window平台，返回的是WindowsSelectorImpl对象
             unwrappedSelector = provider.openSelector();
         } catch (IOException e) {
             throw new ChannelException("failed to open a new selector", e);
@@ -204,6 +207,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
 
         final Class<?> selectorImplClass = (Class<?>) maybeSelectorImplClass;
+        //创建SelectedSelectionKeySet对象
         final SelectedSelectionKeySet selectedKeySet = new SelectedSelectionKeySet();
 
         Object maybeException = AccessController.doPrivileged(new PrivilegedAction<Object>() {
@@ -258,6 +262,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
         selectedKeys = selectedKeySet;
         logger.trace("instrumented a special java.util.Set into: {}", unwrappedSelector);
+        /**
+         * 创建SelectedSelectionKeySetSelector对象，并赋值给SelectorTuple对象的selector属性
+         * 将unwrappedSelector(即上面创建的WindowsSelectorImpl对象)赋值给新创建的SelectedSelectionKeySetSelector对象的属性delegate
+         */
         return new SelectorTuple(unwrappedSelector,
                                  new SelectedSelectionKeySetSelector(unwrappedSelector, selectedKeySet));
     }
@@ -461,7 +469,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                         nextWakeupNanos.set(curDeadlineNanos);
                         try {
                             if (!hasTasks()) {
-                                //对应第一步
+                                //对应第一步，select的返回值赋值给strategy，如果strategy大于0，表示有事件发生
                                 strategy = select(curDeadlineNanos);
                             }
                         } finally {
@@ -489,7 +497,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 if (ioRatio == 100) {
                     try {
                         if (strategy > 0) {
-                            //对应第二步
+                            //对应第二步，strategy大于0，表示有事件发生
                             processSelectedKeys();
                         }
                     } finally {
@@ -500,7 +508,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 } else if (strategy > 0) {
                     final long ioStartTime = System.nanoTime();
                     try {
-                        //对应第二步
+                        //对应第二步，strategy大于0，表示有事件发生
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
@@ -627,11 +635,16 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             i.remove();
 
             if (a instanceof AbstractNioChannel) {
-                //核心方法
+                /**
+                 * 核心方法，把SelectionKey作为入参，去处理事件逻辑
+                 */
                 processSelectedKey(k, (AbstractNioChannel) a);
             } else {
                 @SuppressWarnings("unchecked")
                 NioTask<SelectableChannel> task = (NioTask<SelectableChannel>) a;
+                /**
+                 * 核心方法，把SelectionKey作为入参，去处理事件逻辑
+                 */
                 processSelectedKey(k, task);
             }
 
@@ -825,6 +838,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     private int select(long deadlineNanos) throws IOException {
         if (deadlineNanos == NONE) {
+            /**
+             * selector为NioEventLoop的构造函数中初始化的，为SelectedSelectionKeySetSelector对象
+             * 下面的select方法最后还是执行到WindowsSelectorImpl对象的doSelect方法
+             */
             return selector.select();
         }
         // Timeout will only be 0 if deadline is within 5 microsecs

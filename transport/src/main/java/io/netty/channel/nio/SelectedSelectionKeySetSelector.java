@@ -64,7 +64,9 @@ final class SelectedSelectionKeySetSelector extends Selector {
 
     @Override
     public int select() throws IOException {
+        //selectionKeys为SelectedSelectionKeySet对象
         selectionKeys.reset();
+        //delegate为WindowsSelectorImpl对象，最后还是走到WindowsSelectorImpl对象的doSelect方法中
         return delegate.select();
     }
 
